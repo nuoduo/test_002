@@ -163,9 +163,10 @@ class Tank extends GameObject {
                 break;
         }
         
-        // 边界检测
-        if (newX < 0 || newX + this.width > CANVAS_WIDTH || 
-            newY < 0 || newY + this.height > CANVAS_HEIGHT) {
+        // 边界检测 - 使用画布的实际尺寸
+        const canvas = document.getElementById('gameCanvas');
+        if (newX < 0 || newX + this.width > canvas.width || 
+            newY < 0 || newY + this.height > canvas.height) {
             return false;
         }
         
@@ -262,9 +263,10 @@ class Bullet extends GameObject {
                 break;
         }
         
-        // 边界检测
-        if (this.x < 0 || this.x + this.width > CANVAS_WIDTH || 
-            this.y < 0 || this.y + this.height > CANVAS_HEIGHT) {
+        // 边界检测 - 使用画布的实际尺寸
+        const canvas = document.getElementById('gameCanvas');
+        if (this.x < 0 || this.x + this.width > canvas.width || 
+            this.y < 0 || this.y + this.height > canvas.height) {
             this.active = false;
         }
     }
@@ -604,7 +606,9 @@ class TankGame {
         this.handleInput();
         
         // 更新玩家
-        this.player.update();
+        if (this.player) {
+            this.player.update();
+        }
         
         // 更新敌人坦克
         this.enemyTanks.forEach(tank => {
@@ -647,6 +651,8 @@ class TankGame {
     }
     
     handleInput() {
+        if (!this.player) return;
+        
         // 键盘控制
         if (this.keys['ArrowUp'] || this.touchControls.up) {
             this.player.move(DIRECTIONS.UP, this.walls, [...this.enemyTanks, this.player]);
@@ -675,7 +681,7 @@ class TankGame {
         if (Math.random() < 0.02) {
             // 随机改变方向
             const direction = Math.floor(Math.random() * 4);
-            tank.move(direction, this.walls, [...this.enemyTanks, this.player]);
+            tank.move(direction, this.walls, [...this.enemyTanks, this.player].filter(t => t));
         }
         
         if (Math.random() < 0.01) {
@@ -688,35 +694,127 @@ class TankGame {
         }
     }
     
+    handleCollisions() {
+        if (!this.player) return;
+        
+        // 炮弹与墙壁碰撞检测
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            const bullet = this.bullets[i];
+            if (!bullet.active) continue;
+            
+            for (let wall of this.walls) {
+                if (bullet.checkCollision(wall)) {
+                    // 如果是普通墙壁，墙壁被摧毁
+                    if (wall.destroyable) {
+                        this.walls = this.walls.filter(w => w !== wall);
+                        this.soundManager.play('explode');
+                    }
+                    // 炮弹爆炸
+                    this.explosions.push(new Explosion(bullet.x, bullet.y));
+                    bullet.destroy();
+                    break;
+                }
+            }
+        }
+        
+        // 炮弹与坦克碰撞检测
+        for (let i = this.bullets.length - 1; i >= 0; i--) {
+            const bullet = this.bullets[i];
+            if (!bullet.active) continue;
+            
+            // 玩家炮弹与敌人坦克碰撞
+            if (bullet.isPlayerBullet) {
+                for (let j = this.enemyTanks.length - 1; j >= 0; j--) {
+                    const enemy = this.enemyTanks[j];
+                    if (bullet.checkCollision(enemy)) {
+                        enemy.destroy();
+                        this.explosions.push(new Explosion(enemy.x, enemy.y));
+                        bullet.destroy();
+                        this.score += 100;
+                        this.soundManager.play('explode');
+                        break;
+                    }
+                }
+            } 
+            // 敌人炮弹与玩家碰撞
+            else {
+                if (bullet.checkCollision(this.player)) {
+                    this.player.destroy();
+                    this.explosions.push(new Explosion(this.player.x, this.player.y));
+                    bullet.destroy();
+                    this.lives--;
+                    this.soundManager.play('explode');
+                    
+                    // 如果还有生命，重新生成玩家
+                    if (this.lives > 0) {
+                        setTimeout(() => {
+                            this.player = new Tank(
+                                this.walls[0]?.playerStartX || TILE_SIZE,
+                                this.walls[0]?.playerStartY || (CANVAS_HEIGHT - TILE_SIZE * 2),
+                                '#00ff00', 
+                                true
+                            );
+                        }, 1000);
+                    }
+                }
+            }
+        }
+        
+        // 玩家与敌人坦克碰撞
+        for (let enemy of this.enemyTanks) {
+            if (this.player.checkCollision(this.player.x, this.player.y, enemy)) {
+                this.player.destroy();
+                this.explosions.push(new Explosion(this.player.x, this.player.y));
+                this.lives--;
+                this.soundManager.play('explode');
+                
+                if (this.lives > 0) {
+                    setTimeout(() => {
+                        this.player = new Tank(
+                            this.walls[0]?.playerStartX || TILE_SIZE,
+                            this.walls[0]?.playerStartY || (CANVAS_HEIGHT - TILE_SIZE * 2),
+                            '#00ff00', 
+                            true
+                        );
+                    }, 1000);
+                }
+            }
+        }
+    }
+    
     draw() {
         // 清空画布
         this.ctx.fillStyle = '#000000';
-        this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // 绘制墙壁
-        this.walls.forEach(wall => {
-            if (wall.type > 0) {
-                wall.draw(this.ctx);
+        if (this.gameState === GAME_STATES.PLAYING) {
+            // 绘制墙壁
+            this.walls.forEach(wall => {
+                if (wall.type > 0) {
+                    wall.draw(this.ctx);
+                }
+            });
+            
+            // 绘制玩家
+            if (this.player) {
+                this.player.draw(this.ctx);
             }
-        });
-        
-        // 绘制玩家
-        this.player.draw(this.ctx);
-        
-        // 绘制敌人坦克
-        this.enemyTanks.forEach(tank => {
-            tank.draw(this.ctx);
-        });
-        
-        // 绘制炮弹
-        this.bullets.forEach(bullet => {
-            bullet.draw(this.ctx);
-        });
-        
-        // 绘制爆炸效果
-        this.explosions.forEach(explosion => {
-            explosion.draw(this.ctx);
-        });
+            
+            // 绘制敌人坦克
+            this.enemyTanks.forEach(tank => {
+                tank.draw(this.ctx);
+            });
+            
+            // 绘制炮弹
+            this.bullets.forEach(bullet => {
+                bullet.draw(this.ctx);
+            });
+            
+            // 绘制爆炸效果
+            this.explosions.forEach(explosion => {
+                explosion.draw(this.ctx);
+            });
+        }
     }
     
     gameLoop(currentTime = 0) {
@@ -886,11 +984,6 @@ class TankGame {
         this.soundManager.setEnabled(soundToggle.checked);
         this.saveGameData();
         this.showStartScreen();
-    }
-    
-    // 触控控制
-    setupTouchControls() {
-        // 已在initialize中设置
     }
 }
 

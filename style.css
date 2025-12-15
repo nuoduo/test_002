@@ -10,12 +10,17 @@ body {
     color: #fff;
     overflow: hidden;
     touch-action: none;
+    /* 使用100dvh替代100vh，适配移动设备的动态视口高度 */
+    height: 100dvh;
+    /* 添加安全区域边距 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .game-container {
     position: relative;
-    width: 100vw;
-    height: 100vh;
+    /* 使用100%继承body的高度，body已使用100dvh */
+    width: 100%;
+    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,8 +29,9 @@ body {
 #gameCanvas {
     border: 2px solid #333;
     background-color: #000;
+    /* 确保画布最大高度不超过容器高度减去触摸控制区域的估计高度 */
     max-width: 100%;
-    max-height: 100%;
+    max-height: calc(100% - 120px);
     object-fit: contain;
 }
 
@@ -42,6 +48,8 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 100;
+    /* 添加安全区域边距 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .screen h1, .screen h2 {
@@ -143,7 +151,8 @@ body {
 /* 触控控制界面 */
 #touchControls {
     position: absolute;
-    bottom: 20px;
+    /* 使用env(safe-area-inset-bottom)确保控制区域不被底部导航栏遮挡 */
+    bottom: calc(20px + env(safe-area-inset-bottom));
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -245,6 +254,11 @@ body {
     #touchControls {
         padding: 0 10px;
     }
+    
+    /* 减小画布最大高度，为底部控制区域留出更多空间 */
+    #gameCanvas {
+        max-height: calc(100% - 100px);
+    }
 }
 
 @media (max-width: 480px) {
@@ -272,6 +286,11 @@ body {
     .fire-btn {
         width: 60px;
         height: 60px;
+    }
+    
+    /* 进一步减小画布最大高度，适配小屏幕 */
+    #gameCanvas {
+        max-height: calc(100% - 90px);
     }
 }
 
