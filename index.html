@@ -1,11 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>坦克大战</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>main主线</h1>
+    <div class="game-container">
+        <!-- 游戏画布 -->
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <!-- 游戏界面 -->
+        <div id="startScreen" class="screen">
+            <h1>坦克大战</h1>
+            <button id="startBtn">开始游戏</button>
+            <button id="levelSelectBtn">选择关卡</button>
+            <button id="settingsBtn">设置</button>
+        </div>
+        
+        <div id="levelSelectScreen" class="screen">
+            <h2>选择关卡</h2>
+            <div class="level-grid" id="levelGrid"></div>
+            <button id="backToStartBtn">返回</button>
+        </div>
+        
+        <div id="settingsScreen" class="screen">
+            <h2>设置</h2>
+            <div class="setting-item">
+                <label for="soundToggle">音效</label>
+                <input type="checkbox" id="soundToggle" checked>
+            </div>
+            <button id="saveSettingsBtn">保存</button>
+            <button id="backFromSettingsBtn">返回</button>
+        </div>
+        
+        <div id="pauseScreen" class="screen">
+            <h2>游戏暂停</h2>
+            <button id="resumeBtn">继续游戏</button>
+            <button id="restartBtn">重新开始</button>
+            <button id="quitBtn">退出游戏</button>
+        </div>
+        
+        <div id="gameOverScreen" class="screen">
+            <h2>游戏结束</h2>
+            <div id="finalScore">最终得分: 0</div>
+            <button id="restartGameBtn">重新开始</button>
+            <button id="backToMenuBtn">返回菜单</button>
+        </div>
+        
+        <!-- 游戏状态显示 -->
+        <div id="gameStatus">
+            <div class="status-item">生命值: <span id="lives">3</span></div>
+            <div class="status-item">得分: <span id="score">0</span></div>
+            <div class="status-item">剩余敌人: <span id="enemiesLeft">0</span></div>
+            <div class="status-item">关卡: <span id="currentLevel">1</span></div>
+        </div>
+        
+        <!-- 触控控制界面 -->
+        <div id="touchControls">
+            <div class="direction-pad">
+                <button class="control-btn up" data-direction="up"></button>
+                <div class="middle-row">
+                    <button class="control-btn left" data-direction="left"></button>
+                    <button class="control-btn down" data-direction="down"></button>
+                    <button class="control-btn right" data-direction="right"></button>
+                </div>
+            </div>
+            <button class="fire-btn" id="fireBtn">发射</button>
+        </div>
+    </div>
+    
+    <script src="game.js"></script>
 </body>
 </html>
